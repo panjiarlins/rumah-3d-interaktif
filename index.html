@@ -93,7 +93,7 @@ const VIEWS = {
   jalur_darurat: {n: 'Jalur darurat', pos: [912, 1330, 165], tgt: [905, 700, 120], fov: 70},
   mushola_wc: {n: 'Mushola + WC', pos: [870, 1275, 165], tgt: [1170, 1120, 110], fov: 72},
   mushola_dalam: {n: 'Dalam mushola', pos: [1121, 1131, 150], tgt: [1109, 984, 60], fov: 90},
-  wc_tamu: {n: 'WC tamu', pos: [1150, 1260, 165], tgt: [1250, 1180, 40], fov: 95},
+  wc_tamu: {n: 'WC tamu', pos: [1180, 1262, 160], tgt: [1250, 1170, 35], fov: 95},
   gudang: {n: 'Gudang + toren', pos: [880, 900, 165], tgt: [990, 560, 190], fov: 66},
   saung: {n: 'Saung tamu', pos: [890, 790, 165], tgt: [700, 470, 110], fov: 70},
   belakang: {n: 'Halaman belakang', pos: [560, 745, 170], tgt: [700, 250, 170], fov: 72},
@@ -813,6 +813,10 @@ const startView = VIEWS[Q.get('view')] ? Q.get('view') : (stage === 'c' ? 'lahan
 if (Q.get('t')) { $('time').value = Q.get('t'); setTime(+Q.get('t')); }
 if (Q.get('roof') === '0') { $('roof').checked = true; applyRoof(); }
 if (Q.get('labels') === '0') { $('labels').checked = false; applyLabels(); }
+if (Q.get('ui') === '0') {      // clean frame for screenshots / photo-real renders
+  $('ui').style.display = $('help').style.display = 'none';
+  $('labels').checked = false; applyLabels();
+}
 goView(startView, true);
 draw();
 $('load').remove();
