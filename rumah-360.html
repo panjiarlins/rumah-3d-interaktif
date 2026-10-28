@@ -34,6 +34,8 @@
   <div class="body">
     <h2>Pilih ruang</h2>
     <div class="list" id="list"></div>
+    <label><input type="checkbox" id="real" disabled> Versi realistis (ChatGPT)</label>
+    <div id="realnote" style="font-size:11px;color:#6a747a;margin:2px 0 0 22px">belum ada untuk ruang ini</div>
     <label><input type="checkbox" id="spin"> Putar otomatis</label>
     <p style="font-size:11px;color:#6a747a;line-height:1.4">Dirender dari model 3D (ukuran sesuai denah). <a href="rumah-3d-interaktif.html">← kembali ke 3D interaktif</a></p>
   </div>
@@ -45,7 +47,8 @@
 // Equirectangular 2:1 panoramas rendered by rumah-3d-interaktif.html?pano=<key>; list in gambar/360/index.json.
 import * as THREE from 'three';
 
-const DIR = 'gambar/360/';
+const DIR = 'gambar/360/', REAL = 'gambar/360-realistis/';
+let realKeys = {}, current = null;            // keys with a ChatGPT version -> number of photo-real faces
 const $ = (id) => document.getElementById(id);
 const showErr = (m) => { $('err').style.display = 'block'; $('err').textContent = m; };
 const renderer = new THREE.WebGLRenderer({antialias: true});
@@ -64,17 +67,27 @@ function look() {
   camera.lookAt(Math.cos(pitch) * Math.cos(yaw - Math.PI / 2), Math.sin(pitch), Math.cos(pitch) * Math.sin(yaw - Math.PI / 2));
 }
 function show(item) {
+  current = item;
   document.querySelectorAll('#list button').forEach((b) => b.classList.toggle('on', b.dataset.k === item.key));
-  $('title').textContent = item.n;
+  const nreal = realKeys[item.key];
+  $('real').disabled = !nreal;
+  $('realnote').textContent = nreal ? (nreal + '/6 sisi dari ChatGPT') : 'belum ada untuk ruang ini';
+  const useReal = nreal && $('real').checked, url = (useReal ? REAL : DIR) + item.key + '.jpg';
+  $('title').textContent = item.n + (useReal ? ' · realistis' : '');
   history.replaceState(null, '', '#' + item.key);
   const set = (t) => { scene.background = t; };
-  if (cache[item.key]) return set(cache[item.key]);
-  loader.load(DIR + item.key + '.jpg', (t) => {
+  if (cache[url]) return set(cache[url]);
+  loader.load(url, (t) => {
     t.mapping = THREE.EquirectangularReflectionMapping;
     t.colorSpace = THREE.SRGBColorSpace;
-    cache[item.key] = t; set(t);
-  }, undefined, () => showErr('Gagal memuat ' + DIR + item.key + '.jpg'));
+    cache[url] = t; set(t);
+  }, undefined, () => showErr('Gagal memuat ' + url));
 }
+$('real').onchange = () => current && show(current);
+fetch(REAL + 'index.json').then((r) => r.ok ? r.json() : []).then((list) => {
+  realKeys = Object.fromEntries(list.map((i) => [i.key, i.foto]));
+  if (current) show(current);
+}).catch(() => {});
 fetch(DIR + 'index.json').then((r) => r.json()).then((items) => {
   for (const it of items) {
     const b = document.createElement('button');

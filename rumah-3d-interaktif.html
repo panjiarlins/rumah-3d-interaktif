@@ -859,7 +859,34 @@ function renderPano(key) {
   renderer.setSize(2048, 1024);
   renderer.render(ps, new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1));
 }
-if (Q.get('pano') && PANOS[Q.get('pano')]) {
+// ?faces=<key>: 6 square views (FOV 100°, 5° overlap each side) as a 3×2 atlas, for photo-real editing + re-stitching
+// order/basis must match gambar/360-realistis/gabung-360.py: [forward, up-vector]
+const FACES = [[[1, 0, 0], [0, 1, 0]], [[0, 0, 1], [0, 1, 0]], [[-1, 0, 0], [0, 1, 0]], [[0, 0, -1], [0, 1, 0]],
+               [[0, 1, 0], [-1, 0, 0]], [[0, -1, 0], [1, 0, 0]]];
+function renderFaces(key) {
+  const pv = PANOS[key], T = 1024;
+  if (pv.stage !== stage) setStage(pv.stage);
+  labelObjs.forEach((o) => { o.visible = false; });
+  Object.values(MAT).forEach((m) => { if (m.transmission) { m.transmission = 0; m.needsUpdate = true; } });
+  renderer.setPixelRatio(1);
+  renderer.setSize(3 * T, 2 * T);
+  renderer.setScissorTest(true);
+  const cam = new THREE.PerspectiveCamera(100, 1, 0.05, 3000);
+  cam.position.set(pv.p[0] * S, pv.p[2] * S, pv.p[1] * S);
+  FACES.forEach(([f, up], i) => {
+    cam.up.set(...up);
+    cam.lookAt(cam.position.x + f[0], cam.position.y + f[1], cam.position.z + f[2]);
+    const x = (i % 3) * T, y = (1 - Math.floor(i / 3)) * T;            // viewport origin is bottom-left
+    renderer.setViewport(x, y, T, T); renderer.setScissor(x, y, T, T);
+    renderer.render(scene, cam);
+  });
+}
+if (Q.get('faces') && PANOS[Q.get('faces')]) {
+  $('ui').style.display = $('help').style.display = 'none';
+  labelRenderer.domElement.style.display = 'none';
+  renderFaces(Q.get('faces'));
+  $('load').remove();
+} else if (Q.get('pano') && PANOS[Q.get('pano')]) {
   $('ui').style.display = $('help').style.display = 'none';
   labelRenderer.domElement.style.display = 'none';
   renderPano(Q.get('pano'));
