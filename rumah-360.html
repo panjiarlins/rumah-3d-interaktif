@@ -34,10 +34,10 @@
   <div class="body">
     <h2>Pilih ruang</h2>
     <div class="list" id="list"></div>
-    <label><input type="checkbox" id="real" disabled> Versi realistis (ChatGPT)</label>
+    <label><input type="checkbox" id="real" checked disabled> Versi realistis (render cahaya fisik)</label>
     <div id="realnote" style="font-size:11px;color:#6a747a;margin:2px 0 0 22px">belum ada untuk ruang ini</div>
     <label><input type="checkbox" id="spin"> Putar otomatis</label>
-    <p style="font-size:11px;color:#6a747a;line-height:1.4">Dirender dari model 3D (ukuran sesuai denah). <a href="rumah-3d-interaktif.html">← kembali ke 3D interaktif</a></p>
+    <p style="font-size:11px;color:#6a747a;line-height:1.4">Dirender dari model 3D (ukuran sesuai denah). Versi realistis: simulasi cahaya matahari pukul 10.00 + lampu ruangan. <a href="rumah-3d-interaktif.html">← kembali ke 3D interaktif</a></p>
   </div>
 </div>
 <div id="title"></div>
@@ -47,8 +47,8 @@
 // Equirectangular 2:1 panoramas rendered by rumah-3d-interaktif.html?pano=<key>; list in gambar/360/index.json.
 import * as THREE from 'three';
 
-const DIR = 'gambar/360/', REAL = 'gambar/360-realistis/';
-let realKeys = {}, current = null;            // keys with a ChatGPT version -> number of photo-real faces
+const DIR = 'gambar/360/', REAL = 'gambar/360-cycles/';
+let realKeys = {}, current = null;            // keys with a Blender Cycles render (gambar/360-cycles/render_360.py)
 const $ = (id) => document.getElementById(id);
 const showErr = (m) => { $('err').style.display = 'block'; $('err').textContent = m; };
 const renderer = new THREE.WebGLRenderer({antialias: true});
@@ -71,7 +71,7 @@ function show(item) {
   document.querySelectorAll('#list button').forEach((b) => b.classList.toggle('on', b.dataset.k === item.key));
   const nreal = realKeys[item.key];
   $('real').disabled = !nreal;
-  $('realnote').textContent = nreal ? (nreal + '/6 sisi dari ChatGPT') : 'belum ada untuk ruang ini';
+  $('realnote').textContent = nreal ? 'Blender Cycles · ukuran persis model 3D' : 'belum ada untuk ruang ini';
   const useReal = nreal && $('real').checked, url = (useReal ? REAL : DIR) + item.key + '.jpg';
   $('title').textContent = item.n + (useReal ? ' · realistis' : '');
   history.replaceState(null, '', '#' + item.key);
@@ -85,7 +85,7 @@ function show(item) {
 }
 $('real').onchange = () => current && show(current);
 fetch(REAL + 'index.json').then((r) => r.ok ? r.json() : []).then((list) => {
-  realKeys = Object.fromEntries(list.map((i) => [i.key, i.foto]));
+  realKeys = Object.fromEntries(list.map((k) => [k, true]));
   if (current) show(current);
 }).catch(() => {});
 fetch(DIR + 'index.json').then((r) => r.json()).then((items) => {

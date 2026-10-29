@@ -881,7 +881,22 @@ function renderFaces(key) {
     renderer.render(scene, cam);
   });
 }
-if (Q.get('faces') && PANOS[Q.get('faces')]) {
+// ?glb=1[&stage=c]: the scene as binary glTF for the Blender Cycles 360° renderer (gambar/360-cycles/render_360.py).
+// Material names = MAT keys so Blender can refine them; lamps exported at relative strength (scaled in Blender).
+async function exportGLB() {
+  const {GLTFExporter} = await import('three/addons/exporters/GLTFExporter.js');
+  Object.entries(MAT).forEach(([k, m]) => { m.name = k; });
+  labelObjs.forEach((o) => { o.visible = false; });
+  scene.traverse((o) => { if (o.isInstancedMesh) o.visible = false; });   // grass tufts: Blender scatters its own
+  nightLights.forEach((l) => { l.intensity = l.userData.i || 1; l.name = 'lamp'; });
+  scene.remove(sky, hemi, sun, sun.target);
+  const glb = await new GLTFExporter().parseAsync(scene, {binary: true, onlyVisible: true, maxTextureSize: 1024});
+  window.__glb = await new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(new Blob([glb])); });
+}
+if (Q.get('glb')) {
+  $('load').remove();
+  exportGLB();
+} else if (Q.get('faces') && PANOS[Q.get('faces')]) {
   $('ui').style.display = $('help').style.display = 'none';
   labelRenderer.domElement.style.display = 'none';
   renderFaces(Q.get('faces'));
